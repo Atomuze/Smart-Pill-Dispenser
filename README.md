@@ -1,1 +1,1 @@
-"# helloReactNative" 
+Smart Pill Dispenser APP
