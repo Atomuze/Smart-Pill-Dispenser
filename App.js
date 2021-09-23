@@ -16,27 +16,19 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 class App extends Component {
   state = {
     medicine:"",
-    count: 0,
+    count:0,
     timeH:0,
     timeM:0
   }
   
-
   constructor(props){
     super(props);
     this.getData();
   }
   
-
   onPress = async () => {
     
     try{
-      this.setState({
-        medicine:"",
-        count: 0,
-        timeH:0,
-        timeM:0
-      });
 
       await AsyncStorage.setItem('medicine', JSON.stringify({medicine:this.state.medicine, count: this.state.count, timeH:this.state.timeH, timeM:this.state.timeM}));
 
@@ -50,7 +42,7 @@ class App extends Component {
     try{
       const medicineJSON = await AsyncStorage.getItem('medicine');
       const medicine = JSON.parse(medicineJSON);
-      console.log("g")
+
       if(medicine != null){
         this.setState({...medicine});
       }
@@ -73,8 +65,8 @@ class App extends Component {
         <Text>每次服用數量</Text>
         <TextInput 
           style={styles.input} 
-          onChangeText={val => this.setState({count:val})} 
-          value={this.state.count}
+          onChangeText={val2 => this.setState({count:val2})} 
+          value={this.state.count.toString()}
           keyboardType="numeric" />
 
         <Text>服用時間</Text>
@@ -82,21 +74,19 @@ class App extends Component {
         <TextInput 
           style={styles.input} 
           onChangeText={val => this.setState({timeH:val})} 
-          value={this.state.timeH}
+          value={this.state.timeH.toString()}
           keyboardType="numeric" />
         <Text>分:</Text>
         <TextInput 
           style={styles.input} 
           onChangeText={val => this.setState({timeM:val})} 
-          value={this.state.timeM}
+          value={this.state.timeM.toString()}
           keyboardType="numeric" />
 
         <TouchableOpacity style={styles.button} onPress={this.onPress}>
-         <Text>btn</Text>
+         <Text>save</Text>
         </TouchableOpacity>
 
-        
-        
       </View>
     )
   }
