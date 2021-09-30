@@ -1,20 +1,21 @@
-import React, { Component } from 'react'
+import React, { Component, useState } from 'react'
 import {
+  Alert, Modal,
   StyleSheet,
   TouchableOpacity,
   Text,
   View,
+  Pressable,
   TextInput
 } from 'react-native'
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import RNEsp32Idf,{useProvisioning} from "react-native-esp32-idf";
 
-// var io = require("socket.io");
-// var express = require("express");
-// var app = express();
-// app.use(express.static('www'));
+var medicineNumStr = "medicine1";
 
 class App extends Component {
   state = {
+    modalVisible:false,
     medicine:"",
     count:0,
     timeH:0,
@@ -23,15 +24,24 @@ class App extends Component {
   
   constructor(props){
     super(props);
-    this.getData();
+    this.connectToEspDevice();
   }
   
-  onPress = async () => {
-    
+  connectToEspDevice = async() => {
     try{
+        const result = await RNEsp32Idf.connectWifiDevice("pop"); //proof of possession
+        console.log(result);
+    }
+    catch(err){
+        console.log(err)
+  
+    }
+  }
 
-      await AsyncStorage.setItem('medicine', JSON.stringify({medicine:this.state.medicine, count: this.state.count, timeH:this.state.timeH, timeM:this.state.timeM}));
-
+  onPress = async () => {
+    try{
+      await AsyncStorage.setItem(medicineNumStr, JSON.stringify({medicine:this.state.medicine, count: this.state.count, timeH:this.state.timeH, timeM:this.state.timeM}));
+      
     }catch(e){
       console.log(e);
     }
@@ -40,8 +50,11 @@ class App extends Component {
 
   getData = async () => {
     try{
-      const medicineJSON = await AsyncStorage.getItem('medicine');
+      const medicineJSON = await AsyncStorage.getItem(medicineNumStr);
       const medicine = JSON.parse(medicineJSON);
+      
+      console.log(medicineNumStr);
+      console.log(medicineJSON);
 
       if(medicine != null){
         this.setState({...medicine});
@@ -54,38 +67,118 @@ class App extends Component {
  render() {
   
     return (
-      <View style={styles.container}>
+      <View style={styles.centeredView}>
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={this.state.modalVisible}
+          onRequestClose={() => {
+            Alert.alert("Modal has been closed.");
+            this.setState({modalVisible:!this.state.modalVisible})
+          }}
+        >
+          <View style={styles.centeredView}>
+            <View style={styles.modalView}>
+              <Text>藥物名稱</Text>
+              <TextInput 
+                style={styles.input} 
+                onChangeText={val => this.setState({medicine:val})} 
+                value={this.state.medicine} />
+
+              <Text>每次服用數量</Text>
+              <TextInput 
+                style={styles.input} 
+                onChangeText={val2 => this.setState({count:val2})} 
+                value={this.state.count.toString()}
+                keyboardType="numeric" />
+
+              <Text>服用時間</Text>
+              <Text>時:</Text>
+              <TextInput 
+                style={styles.input} 
+                onChangeText={val => this.setState({timeH:val})} 
+                value={this.state.timeH.toString()}
+                keyboardType="numeric" />
+              <Text>分:</Text>
+              <TextInput 
+                style={styles.input} 
+                onChangeText={val => this.setState({timeM:val})} 
+                value={this.state.timeM.toString()}
+                keyboardType="numeric" />
+
+              <Pressable
+                style={[styles.button, styles.buttonClose]}
+                onPress={() => {this.setState({modalVisible:!this.state.modalVisible});
+                                this.onPress(); }}
+              >
+                <Text style={styles.textStyle}>save</Text>
+              </Pressable>
+            </View>
+          </View>
+        </Modal>
+
+        <Pressable
+          style={[styles.button, styles.buttonOpen]}
+          onPress={() => {this.setState({modalVisible:true})
+                    medicineNumStr = "medicine1";
+                    this.getData() }}  
+        >
+          <Text style={styles.textStyle}>Slot 1</Text>
+        </Pressable>
+
+        <Pressable
+          style={[styles.button, styles.buttonOpen]}
+          onPress={() => {this.setState({modalVisible:true})
+                    medicineNumStr = "medicine2";
+                    this.getData()}}  
+        >
+          <Text style={styles.textStyle}>Slot 2</Text>
+        </Pressable>
+
+        <Pressable
+          style={[styles.button, styles.buttonOpen]}
+          onPress={() => {this.setState({modalVisible:true})
+                    medicineNumStr = "medicine3";
+                    this.getData()}}  
+        >
+          <Text style={styles.textStyle}>Slot 3</Text>
+        </Pressable>
         
-        <Text>藥物名稱</Text>
-        <TextInput 
-          style={styles.input} 
-          onChangeText={val => this.setState({medicine:val})} 
-          value={this.state.medicine} />
+        <Pressable
+          style={[styles.button, styles.buttonOpen]}
+          onPress={() => {this.setState({modalVisible:true})
+                    medicineNumStr = "medicine4";
+                    this.getData()}}  
+        >
+          <Text style={styles.textStyle}>Slot 4</Text>
+        </Pressable>
 
-        <Text>每次服用數量</Text>
-        <TextInput 
-          style={styles.input} 
-          onChangeText={val2 => this.setState({count:val2})} 
-          value={this.state.count.toString()}
-          keyboardType="numeric" />
+        <Pressable
+          style={[styles.button, styles.buttonOpen]}
+          onPress={() => {this.setState({modalVisible:true})
+                    medicineNumStr = "medicine5";
+                    this.getData()}}  
+        >
+          <Text style={styles.textStyle}>Slot 5</Text>
+        </Pressable>
 
-        <Text>服用時間</Text>
-        <Text>時:</Text>
-        <TextInput 
-          style={styles.input} 
-          onChangeText={val => this.setState({timeH:val})} 
-          value={this.state.timeH.toString()}
-          keyboardType="numeric" />
-        <Text>分:</Text>
-        <TextInput 
-          style={styles.input} 
-          onChangeText={val => this.setState({timeM:val})} 
-          value={this.state.timeM.toString()}
-          keyboardType="numeric" />
+        <Pressable
+          style={[styles.button, styles.buttonOpen]}
+          onPress={() => {this.setState({modalVisible:true})
+                    medicineNumStr = "medicine6";
+                    this.getData()}}  
+        >
+          <Text style={styles.textStyle}>Slot 6</Text>
+        </Pressable>
 
-        <TouchableOpacity style={styles.button} onPress={this.onPress}>
-         <Text>save</Text>
-        </TouchableOpacity>
+        <Pressable
+          style={[styles.button, styles.buttonOpen]}
+          onPress={() => {this.setState({modalVisible:true})
+                    medicineNumStr = "medicine7";
+                    this.getData()}}  
+        >
+          <Text style={styles.textStyle}>Slot 7</Text>
+        </Pressable>
 
       </View>
     )
@@ -93,47 +186,60 @@ class App extends Component {
 }
 
 const styles = StyleSheet.create({
-  container: {
+  centeredView: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 22
+  },
+  modalView: {
+    margin: 20,
+    backgroundColor: "white",
+    borderRadius: 20,
+    padding: 35,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5
   },
   button: {
-    alignItems: 'center',
-    backgroundColor: '#DDDDDD',
-    padding: 10,
-    marginBottom: 10
+    borderRadius: 20,
+    padding: 20,
+    elevation: 2
+  },
+  buttonOpen: {
+    backgroundColor: "#F194FF",
+  },
+  buttonClose: {
+    backgroundColor: "#2196F3",
+  },
+  textStyle: {
+    color: "white",
+    fontWeight: "bold",
+    textAlign: "center"
+  },
+  modalText: {
+    marginBottom: 15,
+    textAlign: "center"
   },
   input: {
     height: 40,
+    width: 100,
     margin: 12,
     borderWidth: 1,
     padding: 10,
   }
-})
+});
+
+
+
 
 export default App;
 
 
 
-
-// var server = app.listen(5438, function(req, res) {
-//   console.log("connecting to 5438 port");
-// });
-
-// var sio = io(server);
-
-// sio.on('connection', function(socket){
-//   console.log("Connected");
-
-//   //get the messege from arduino
-//   socket.on('connection', function (data) {
-// 　　console.log('message:' + data.msg);
-//   });
-
-//   //get the time 
-//   socket.on('atime', function (data) {
-// 　　console.log('time message:' + data.msg);
-//     socket.emit('atime', { 'time': new Date().toJSON() });
-//   });
-// });
