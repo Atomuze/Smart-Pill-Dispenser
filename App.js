@@ -6,12 +6,14 @@ import {
   Text,
   View,
   Pressable,
-  TextInput
+  TextInput,
+  Linking
 } from 'react-native'
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import RNEsp32Idf,{useProvisioning} from "react-native-esp32-idf";
 
 var medicineNumStr = "medicine1";
+const supportedURL = "http://192.168.137.215/setuid?uid=2";
+
 
 class App extends Component {
   state = {
@@ -21,22 +23,16 @@ class App extends Component {
     timeH:0,
     timeM:0
   }
-  
-  constructor(props){
-    super(props);
-    this.connectToEspDevice();
-  }
-  
-  connectToEspDevice = async() => {
+
+
+  OpenURLButton = async(url) => {
+    console.log("url is " + url);
     try{
-        const result = await RNEsp32Idf.connectWifiDevice("pop"); //proof of possession
-        console.log(result);
+      var ws = new WebSocket(supportedURL);
+    }catch(e){
+      console.log(e);
     }
-    catch(err){
-        console.log(err)
-  
-    }
-  }
+  };
 
   onPress = async () => {
     try{
@@ -179,6 +175,14 @@ class App extends Component {
         >
           <Text style={styles.textStyle}>Slot 7</Text>
         </Pressable>
+        
+        <Pressable
+          style={[styles.button, styles.buttonOpen]}
+          onPress={() => {this.OpenURLButton(supportedURL)}}  
+        >
+          <Text style={styles.textStyle}>ESP32</Text>
+        </Pressable>
+
 
       </View>
     )
