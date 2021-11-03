@@ -1,19 +1,16 @@
-import React, { Component, useState } from 'react'
+import React, { Component } from 'react'
 import {
   Alert, Modal,
   StyleSheet,
-  TouchableOpacity,
   Text,
   View,
   Pressable,
   TextInput,
-  Linking
 } from 'react-native'
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 var medicineNumStr = "medicine1";
-const supportedURL = "http://192.168.137.215/setuid?uid=2";
-
+const URL = "http://192.168.0.112/setmsg?msg=";
 
 class App extends Component {
   state = {
@@ -26,9 +23,9 @@ class App extends Component {
 
 
   OpenURLButton = async(url) => {
-    console.log("url is " + url);
+    console.log("url is " + url + this.setMessageToServer());
     try{
-      var ws = new WebSocket(supportedURL);
+      var ws = new WebSocket(URL + this.setMessageToServer());
     }catch(e){
       console.log(e);
     }
@@ -37,11 +34,11 @@ class App extends Component {
   onPress = async () => {
     try{
       await AsyncStorage.setItem(medicineNumStr, JSON.stringify({medicine:this.state.medicine, count: this.state.count, timeH:this.state.timeH, timeM:this.state.timeM}));
-      
+      console.log("setItem " + await AsyncStorage.getItem(medicineNumStr));
+
     }catch(e){
       console.log(e);
     }
-    this.getData();
   }
 
   getData = async () => {
@@ -49,8 +46,7 @@ class App extends Component {
       const medicineJSON = await AsyncStorage.getItem(medicineNumStr);
       const medicine = JSON.parse(medicineJSON);
       
-      console.log(medicineNumStr);
-      console.log(medicineJSON);
+      console.log("getItem " + medicineJSON);
 
       if(medicine != null){
         this.setState({...medicine});
@@ -58,6 +54,12 @@ class App extends Component {
     }catch(e){
       console.log(e);
     }
+  }
+
+  setMessageToServer(){
+    let messageToServer = medicineNumStr + "_" + this.state.medicine + "_" + this.state.count + "_" +this.state.timeH + "_" + this.state.timeM;
+    console.log("setMessageToServer: " + messageToServer);
+    return messageToServer;
   }
 
  render() {
@@ -105,7 +107,9 @@ class App extends Component {
               <Pressable
                 style={[styles.button, styles.buttonClose]}
                 onPress={() => {this.setState({modalVisible:!this.state.modalVisible});
-                                this.onPress(); }}
+                                this.onPress();
+                                this.setMessageToServer();
+                                this.OpenURLButton(URL)}}
               >
                 <Text style={styles.textStyle}>save</Text>
               </Pressable>
@@ -117,7 +121,7 @@ class App extends Component {
           style={[styles.button, styles.buttonOpen]}
           onPress={() => {this.setState({modalVisible:true})
                     medicineNumStr = "medicine1";
-                    this.getData() }}  
+                    this.getData();}}  
         >
           <Text style={styles.textStyle}>Slot 1</Text>
         </Pressable>
@@ -126,7 +130,7 @@ class App extends Component {
           style={[styles.button, styles.buttonOpen]}
           onPress={() => {this.setState({modalVisible:true})
                     medicineNumStr = "medicine2";
-                    this.getData()}}  
+                    this.getData();}}  
         >
           <Text style={styles.textStyle}>Slot 2</Text>
         </Pressable>
@@ -135,7 +139,7 @@ class App extends Component {
           style={[styles.button, styles.buttonOpen]}
           onPress={() => {this.setState({modalVisible:true})
                     medicineNumStr = "medicine3";
-                    this.getData()}}  
+                    this.getData();}}  
         >
           <Text style={styles.textStyle}>Slot 3</Text>
         </Pressable>
@@ -144,7 +148,7 @@ class App extends Component {
           style={[styles.button, styles.buttonOpen]}
           onPress={() => {this.setState({modalVisible:true})
                     medicineNumStr = "medicine4";
-                    this.getData()}}  
+                    this.getData();}}  
         >
           <Text style={styles.textStyle}>Slot 4</Text>
         </Pressable>
@@ -153,7 +157,7 @@ class App extends Component {
           style={[styles.button, styles.buttonOpen]}
           onPress={() => {this.setState({modalVisible:true})
                     medicineNumStr = "medicine5";
-                    this.getData()}}  
+                    this.getData();}}  
         >
           <Text style={styles.textStyle}>Slot 5</Text>
         </Pressable>
@@ -162,7 +166,7 @@ class App extends Component {
           style={[styles.button, styles.buttonOpen]}
           onPress={() => {this.setState({modalVisible:true})
                     medicineNumStr = "medicine6";
-                    this.getData()}}  
+                    this.getData();}}  
         >
           <Text style={styles.textStyle}>Slot 6</Text>
         </Pressable>
@@ -171,19 +175,10 @@ class App extends Component {
           style={[styles.button, styles.buttonOpen]}
           onPress={() => {this.setState({modalVisible:true})
                     medicineNumStr = "medicine7";
-                    this.getData()}}  
+                    this.getData();}}  
         >
           <Text style={styles.textStyle}>Slot 7</Text>
         </Pressable>
-        
-        <Pressable
-          style={[styles.button, styles.buttonOpen]}
-          onPress={() => {this.OpenURLButton(supportedURL)}}  
-        >
-          <Text style={styles.textStyle}>ESP32</Text>
-        </Pressable>
-
-
       </View>
     )
   }
