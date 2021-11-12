@@ -12,7 +12,7 @@ import {
 	View
 } from 'react-native';
 import { ImagePicker, Permissions } from 'expo';
-import uuid from 'uuid';
+import { nanoid } from 'nanoid/non-secure';
 import Environment from './config/environment';
 import firebase from './config/firebase';
 
@@ -272,7 +272,7 @@ async function uploadImageAsync(uri) {
 	const ref = firebase
 		.storage()
 		.ref()
-		.child(uuid.v4());
+		.child(nanoid());
 	const snapshot = await ref.put(blob);
 
 	blob.close();
