@@ -1,5 +1,6 @@
-import {GOOGLE_CLOUD_VISION_API_KEY, FIREBASE_API_KEY, FIREBASE_AUTH_DOMAIN,  FIREBASE_PROJECT_ID, FIREBASE_STORAGE_BUCKET, FIREBASE_MESSAGING_SENDER_ID} from "../secret.js"
-var Environment = {
+import {GOOGLE_CLOUD_VISION_API_KEY, FIREBASE_API_KEY, FIREBASE_AUTH_DOMAIN, FIREBASE_PROJECT_ID, FIREBASE_STORAGE_BUCKET, FIREBASE_MESSAGING_SENDER_ID} from "../secret.js"
+import Constants from 'expo-constants'
+var environments = {
   staging: {
     FIREBASE_API_KEY,
     FIREBASE_AUTH_DOMAIN,
@@ -13,18 +14,18 @@ var Environment = {
   }
 };
 function getReleaseChannel() {
-  let releaseChannel = Expo.Constants.manifest.releaseChannel;
+  let releaseChannel = Constants.manifest.releaseChannel;
   if (releaseChannel === undefined) {
-    return staging;
-  } else if (releaseChannel === staging) {
-    return staging;
+    return 'staging';
+  } else if (releaseChannel === 'staging') {
+    return 'staging';
   } else {
-    return staging;
+    return 'staging';
   }
 }
 function getEnvironment(env) {
-  console.log("Release Channel: ", getReleaseChannel());
-  return Environment[env];
+  console.log('Release Channel: ', getReleaseChannel());
+  return environments[env];
 }
 var Environment = getEnvironment(getReleaseChannel());
 export default Environment;

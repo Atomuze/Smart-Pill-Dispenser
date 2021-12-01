@@ -11,10 +11,10 @@ import {
 	ScrollView,
 	View
 } from 'react-native';
-import { ImagePicker, Permissions } from 'expo';
-import uuid from 'uuid';
+import * as Permissions from 'expo-permissions';
+import * as ImagePicker from 'expo-image-picker';
 import Environment from './config/environment';
-import firebase from './config/firebase';
+import { getStorage, ref , uploadBytes, getDownloadURL  } from "firebase/storage";
 
 export default class App extends React.Component {
 	state = {
@@ -24,19 +24,19 @@ export default class App extends React.Component {
 	};
 
 	async componentDidMount() {
-		await Permissions.askAsync(Permissions.CAMERA_ROLL);
-		await Permissions.askAsync(Permissions.CAMERA);
+		try{
+			//await Permissions.askAsync(Permissions.CAMERA_ROLL);
+			await Permissions.askAsync(Permissions.CAMERA);
+		}catch(e){
+			console.log(e)
+		}
+		
 	}
 
 	render() {
 		let { image } = this.state;
-
 		return (
 			<View style={styles.container}>
-				<ScrollView
-					style={styles.container}
-					contentContainerStyle={styles.contentContainer}
-				>
 					<View style={styles.getStartedContainer}>
 						{image ? null : (
 							<Text style={styles.getStartedText}>Google Cloud Vision</Text>
@@ -50,6 +50,7 @@ export default class App extends React.Component {
 						/>
 
 						<Button onPress={this._takePhoto} title="Take a photo" />
+
 						{this.state.googleResponse && (
 							<FlatList
 								data={this.state.googleResponse.responses[0].labelAnnotations}
@@ -61,7 +62,6 @@ export default class App extends React.Component {
 						{this._maybeRenderImage()}
 						{this._maybeRenderUploadingOverlay()}
 					</View>
-				</ScrollView>
 			</View>
 		);
 	}
@@ -192,7 +192,7 @@ export default class App extends React.Component {
 			this.setState({ uploading: true });
 
 			if (!pickerResult.cancelled) {
-				uploadUrl = await uploadImageAsync(pickerResult.uri);
+				let uploadUrl = await uploadImageAsync(pickerResult.uri);
 				this.setState({ image: uploadUrl });
 			}
 		} catch (e) {
@@ -211,16 +211,16 @@ export default class App extends React.Component {
 				requests: [
 					{
 						features: [
-							{ type: 'LABEL_DETECTION', maxResults: 10 },
-							{ type: 'LANDMARK_DETECTION', maxResults: 5 },
-							{ type: 'FACE_DETECTION', maxResults: 5 },
-							{ type: 'LOGO_DETECTION', maxResults: 5 },
-							{ type: 'TEXT_DETECTION', maxResults: 5 },
-							{ type: 'DOCUMENT_TEXT_DETECTION', maxResults: 5 },
-							{ type: 'SAFE_SEARCH_DETECTION', maxResults: 5 },
-							{ type: 'IMAGE_PROPERTIES', maxResults: 5 },
-							{ type: 'CROP_HINTS', maxResults: 5 },
-							{ type: 'WEB_DETECTION', maxResults: 5 }
+							// { type: 'LABEL_DETECTION', maxResults: 10 },
+							// { type: 'LANDMARK_DETECTION', maxResults: 5 },
+							// { type: 'FACE_DETECTION', maxResults: 5 },
+							// { type: 'LOGO_DETECTION', maxResults: 5 },
+							// { type: 'TEXT_DETECTION', maxResults: 5 },
+							{ type: 'DOCUMENT_TEXT_DETECTION', maxResults: 5 }
+							// { type: 'SAFE_SEARCH_DETECTION', maxResults: 5 },
+							// { type: 'IMAGE_PROPERTIES', maxResults: 5 },
+							// { type: 'CROP_HINTS', maxResults: 5 },
+							// { type: 'WEB_DETECTION', maxResults: 5 }
 						],
 						image: {
 							source: {
@@ -269,21 +269,29 @@ async function uploadImageAsync(uri) {
 		xhr.send(null);
 	});
 
-	const ref = firebase
-		.storage()
-		.ref()
-		.child(uuid.v4());
-	const snapshot = await ref.put(blob);
+	const storage = getStorage();
+	const storageRef = ref(storage, "picture");
 
+	await uploadBytes(storageRef, blob).then((snapshot) => {
+		console.log('Uploaded an blob !');
+	});
+
+	let downloadURL
+	await getDownloadURL(storageRef).then((url) => {
+		console.log('get downloadURL !	' + url);
+		downloadURL = url;
+		
+	})
+	
 	blob.close();
-
-	return await snapshot.ref.getDownloadURL();
+	return downloadURL;
 }
 
 const styles = StyleSheet.create({
 	container: {
 		flex: 1,
 		backgroundColor: '#fff',
+		paddingTop: 50,
 		paddingBottom: 10
 	},
 	developmentModeText: {
