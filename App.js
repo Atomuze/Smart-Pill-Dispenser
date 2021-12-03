@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
 	ActivityIndicator,
 	Button,
@@ -15,22 +15,62 @@ import * as ImagePicker from 'expo-image-picker';
 import Environment from './config/environment';
 import firebase from './config/firebase';
 import { getStorage, ref , uploadBytes, getDownloadURL  } from "firebase/storage";
+// import * as Notify from './notify';
+// import Notif from './notify';
+
+import Constants from 'expo-constants';
+import * as Notifications from 'expo-notifications';
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: false,
+    shouldSetBadge: false,
+  }),
+});
 
 export default class App extends React.Component {
-	state = {
+ 	state = {
 		image: null,
 		uploading: false,
-		googleResponse: null
+		googleResponse: null,
+		expoPushToken:'',
+		notification:false,
+		notificationListener:null,
+		responseListener:null,
+		message:"123"
 	};
+
+	constructor(){
+		super();
+		this.state.notificationListener = React.createRef();
+		this.state.responseListener = React.createRef();
+		
+		// async () => {await sendPushNotification(expoPushToken);}
+	}
+
 
 	async componentDidMount() {
 		try{
+			registerForPushNotificationsAsync().then(token => this.state.expoPushToken = token);
+	  
+			// This listener is fired whenever a notification is received while the app is foregrounded
+			this.state.notificationListener.current = Notifications.addNotificationReceivedListener(notification => this.state.notification = notification);
+		
+			// This listener is fired whenever a user taps on or interacts with a notification (works when app is foregrounded, backgrounded, or killed)
+			this.state.responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
+			  console.log(response);
+			});
+		
+			return () => {
+			  Notifications.removeNotificationSubscription(this.state.notificationListener.current);
+			  Notifications.removeNotificationSubscription(this.state.responseListener.current);
+			};
 			//await Permissions.askAsync(Permissions.CAMERA_ROLL);
-			await Permissions.askAsync(Permissions.CAMERA);
+			//await Permissions.askAsync(Permissions.CAMERA);
 		}catch(e){
 			console.log(e)
 		}
-		
 	}
 
 	render() {
@@ -48,7 +88,7 @@ export default class App extends React.Component {
 							onPress={this._pickImage}
 							title="從圖片庫中選擇藥袋照片"
 						/>
-
+							
 						<Button onPress={this._takePhoto} title="拍攝藥袋照片" />
 
 						{this.state.googleResponse && (
@@ -142,13 +182,42 @@ export default class App extends React.Component {
 						onLongPress={this._share}
 						style={styles.getGeneralText}
 					>
-						{this.getInfo(JSON.stringify(googleResponse.responses))}
+						{this.state.message = this.getInfo(JSON.stringify(googleResponse.responses))}
+						{this.setnotitime(this.state.message)}
+						{this.state.message}
 					</Text>
 				)}
 			</View>
 		);
 	};
 
+	setnotitime = (mes) =>{
+		let h;
+		let m;
+		console.log("setnotitime")
+		if(mes.indexOf("三餐飯後") != -1){
+			h = [8, 13, 0];
+			m = [30, 0, 37];
+		}else if(mes.indexOf("早晚飯後")!= -1){
+			h = [0, 0];
+			m = [31, 32];
+		}else if(mes.indexOf("三餐飯前") != -1){
+			h = [8, 12, 18];
+			m = [0, 0, 0];
+		}else if(mes.indexOf("早晚飯前")!= -1){
+			h = [8, 18];
+			m = [0, 0];
+		}else {
+			h = [0];
+			m = [0];
+		}
+		
+		for(let i=0 ; i<h.length; i++){
+			schedulePushNotification(this.state.message, h[i], m[i]);
+			console.log("set the notification time to " + h[i] + ":"+  m[i]);
+		}
+	}
+	
 	getInfo = respo => {
 		let text1 = "";
 		let text2 = "";
@@ -277,7 +346,7 @@ export default class App extends React.Component {
 				}
 			);
 			let responseJson = await response.json();
-			console.log(responseJson);
+			// console.log(responseJson);
 			this.setState({
 				googleResponse: responseJson,
 				uploading: false
@@ -286,6 +355,7 @@ export default class App extends React.Component {
 			console.log(error);
 		}
 	};
+
 	
 }
 
@@ -307,7 +377,7 @@ async function uploadImageAsync(uri) {
 	const storage1 = firebase.storage;
 	const storage = getStorage();
 	const storageRef = ref(storage, "picture");
-	console.log(Environment['FIREBASE_API_KEY']);
+	// console.log(Environment['FIREBASE_API_KEY']);
 
 	await uploadBytes(storageRef, blob).then((snapshot) => {
 		console.log('Uploaded an blob !');
@@ -324,12 +394,84 @@ async function uploadImageAsync(uri) {
 	return downloadURL;
 }
 
+// Can use this function below, OR use Expo's Push Notification Tool-> https://expo.dev/notifications
+async function sendPushNotification(expoPushToken, mes) {
+	const message = {
+	  to: expoPushToken,
+	  sound: 'default',
+	  title: '智慧藥盒服藥通知',
+	  body: mes,
+	  data: { someData: mes },
+	};
+  
+	console.log(mes);
+	await fetch('https://exp.host/--/api/v2/push/send', {
+	  method: 'POST',
+	  headers: {
+		Accept: 'application/json',
+		'Accept-encoding': 'gzip, deflate',
+		'Content-Type': 'application/json',
+	  },
+	  body: JSON.stringify(message),
+	});
+}
+  
+async function registerForPushNotificationsAsync() {
+	let token;
+	if (Constants.isDevice) {
+	  const { status: existingStatus } = await Notifications.getPermissionsAsync();
+	  let finalStatus = existingStatus;
+	  if (existingStatus !== 'granted') {
+		const { status } = await Notifications.requestPermissionsAsync();
+		finalStatus = status;
+	  }
+	  if (finalStatus !== 'granted') {
+		alert('Failed to get push token for push notification!');
+		return;
+	  }
+	  token = (await Notifications.getExpoPushTokenAsync()).data;
+	  console.log(token);
+	} else {
+	  alert('Must use physical device for Push Notifications');
+	}
+  
+	if (Platform.OS === 'android') {
+	  Notifications.setNotificationChannelAsync('default', {
+		name: 'default',
+		importance: Notifications.AndroidImportance.MAX,
+		vibrationPattern: [0, 250, 250, 250],
+		lightColor: '#FF231F7C',
+	  });
+	}
+  
+	return token;
+}
+
+  async function schedulePushNotification(mes, hour, min, id) {
+	await Notifications.scheduleNotificationAsync({
+	 	content: {
+			title: "智慧藥盒服藥通知",
+			body: mes,
+			data: { data: 'goes here' },
+	  	},
+	  	trigger: {
+			hour: hour,
+			minute: min,
+			repeats: true,
+			channelId:id
+		},
+	});
+  }
+
+
 const styles = StyleSheet.create({
 	container: {
 		flex: 1,
 		backgroundColor: '#fff',
 		paddingTop: 50,
-		paddingBottom: 10
+		paddingBottom: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
 	},
 	developmentModeText: {
 		marginBottom: 20,

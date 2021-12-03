@@ -8,13 +8,13 @@ import {
 	Share,
 	StyleSheet,
 	Text,
-	ScrollView,
 	View
 } from 'react-native';
-import { ImagePicker, Permissions } from 'expo';
-import { nanoid } from 'nanoid/non-secure';
+import * as Permissions from 'expo-permissions';
+import * as ImagePicker from 'expo-image-picker';
 import Environment from './config/environment';
 import firebase from './config/firebase';
+import { getStorage, ref , uploadBytes, getDownloadURL  } from "firebase/storage";
 
 export default class App extends React.Component {
 	state = {
@@ -24,32 +24,33 @@ export default class App extends React.Component {
 	};
 
 	async componentDidMount() {
-		await Permissions.askAsync(Permissions.CAMERA_ROLL);
-		await Permissions.askAsync(Permissions.CAMERA);
+		try{
+			//await Permissions.askAsync(Permissions.CAMERA_ROLL);
+			await Permissions.askAsync(Permissions.CAMERA);
+		}catch(e){
+			console.log(e)
+		}
+		
 	}
 
 	render() {
 		let { image } = this.state;
-
 		return (
 			<View style={styles.container}>
-				<ScrollView
-					style={styles.container}
-					contentContainerStyle={styles.contentContainer}
-				>
 					<View style={styles.getStartedContainer}>
 						{image ? null : (
-							<Text style={styles.getStartedText}>Google Cloud Vision</Text>
+							<Text style={styles.getStartedText}>智慧藥盒</Text>
 						)}
 					</View>
 
 					<View style={styles.helpContainer}>
 						<Button
 							onPress={this._pickImage}
-							title="Pick an image from camera roll"
+							title="從圖片庫中選擇藥袋照片"
 						/>
 
-						<Button onPress={this._takePhoto} title="Take a photo" />
+						<Button onPress={this._takePhoto} title="拍攝藥袋照片" />
+
 						{this.state.googleResponse && (
 							<FlatList
 								data={this.state.googleResponse.responses[0].labelAnnotations}
@@ -61,7 +62,6 @@ export default class App extends React.Component {
 						{this._maybeRenderImage()}
 						{this._maybeRenderUploadingOverlay()}
 					</View>
-				</ScrollView>
 			</View>
 		);
 	}
@@ -113,7 +113,7 @@ export default class App extends React.Component {
 				<Button
 					style={{ marginBottom: 10 }}
 					onPress={() => this.submitToGoogle()}
-					title="Analyze!"
+					title="按此分析藥袋照片"
 				/>
 
 				<View
@@ -135,20 +135,54 @@ export default class App extends React.Component {
 					style={{ paddingVertical: 10, paddingHorizontal: 10 }}
 				/>
 
-				<Text>Raw JSON:</Text>
-
 				{googleResponse && (
+					
 					<Text
 						onPress={this._copyToClipboard}
 						onLongPress={this._share}
-						style={{ paddingVertical: 10, paddingHorizontal: 10 }}
+						style={styles.getGeneralText}
 					>
-						JSON.stringify(googleResponse.responses)
+						{this.getInfo(JSON.stringify(googleResponse.responses))}
 					</Text>
 				)}
 			</View>
 		);
 	};
+
+	getInfo = respo => {
+		let text1 = "";
+		let text2 = "";
+		let text3 = "";
+
+		let namef = respo.indexOf("藥名");
+		let namel = respo.indexOf("\\n",namef);
+		if(namef != -1){
+			text1 = "藥名：" + respo.substring(namef+3,namel);
+		}else{
+			text1 = "藥名：找無藥名";
+		}
+
+		let usef = respo.indexOf("每次");
+		if(usef != -1){
+			text2 = "每次" + respo.substring(usef+2,usef+3) + "顆";
+		}else{
+			text2 = "找無服藥次數";
+		}
+
+		if(respo.indexOf("三餐飯後") != -1){
+			text3 = "三餐飯後";
+		}else if(respo.indexOf("早晚飯後")!= -1){
+			text3 = "早晚飯後";
+		}else if(respo.indexOf("三餐飯前") != -1){
+			text3 = "三餐飯前";
+		}else if(respo.indexOf("早晚飯前")!= -1){
+			text3 = "早晚飯前";
+		}else {
+			text3 = "無服藥時間";
+		}
+		return text1 + "\n" + text2 + "\n" + text3;
+
+	}
 
 	_keyExtractor = (item, index) => item.id;
 
@@ -192,7 +226,7 @@ export default class App extends React.Component {
 			this.setState({ uploading: true });
 
 			if (!pickerResult.cancelled) {
-				uploadUrl = await uploadImageAsync(pickerResult.uri);
+				let uploadUrl = await uploadImageAsync(pickerResult.uri);
 				this.setState({ image: uploadUrl });
 			}
 		} catch (e) {
@@ -211,16 +245,16 @@ export default class App extends React.Component {
 				requests: [
 					{
 						features: [
-							{ type: 'LABEL_DETECTION', maxResults: 10 },
-							{ type: 'LANDMARK_DETECTION', maxResults: 5 },
-							{ type: 'FACE_DETECTION', maxResults: 5 },
-							{ type: 'LOGO_DETECTION', maxResults: 5 },
-							{ type: 'TEXT_DETECTION', maxResults: 5 },
-							{ type: 'DOCUMENT_TEXT_DETECTION', maxResults: 5 },
-							{ type: 'SAFE_SEARCH_DETECTION', maxResults: 5 },
-							{ type: 'IMAGE_PROPERTIES', maxResults: 5 },
-							{ type: 'CROP_HINTS', maxResults: 5 },
-							{ type: 'WEB_DETECTION', maxResults: 5 }
+							// { type: 'LABEL_DETECTION', maxResults: 10 },
+							// { type: 'LANDMARK_DETECTION', maxResults: 5 },
+							// { type: 'FACE_DETECTION', maxResults: 5 },
+							// { type: 'LOGO_DETECTION', maxResults: 5 },
+							// { type: 'TEXT_DETECTION', maxResults: 5 },
+							{ type: 'DOCUMENT_TEXT_DETECTION', maxResults: 5 }
+							// { type: 'SAFE_SEARCH_DETECTION', maxResults: 5 },
+							// { type: 'IMAGE_PROPERTIES', maxResults: 5 },
+							// { type: 'CROP_HINTS', maxResults: 5 },
+							// { type: 'WEB_DETECTION', maxResults: 5 }
 						],
 						image: {
 							source: {
@@ -252,6 +286,7 @@ export default class App extends React.Component {
 			console.log(error);
 		}
 	};
+	
 }
 
 async function uploadImageAsync(uri) {
@@ -269,21 +304,31 @@ async function uploadImageAsync(uri) {
 		xhr.send(null);
 	});
 
-	const ref = firebase
-		.storage()
-		.ref()
-		.child(nanoid());
-	const snapshot = await ref.put(blob);
+	const storage1 = firebase.storage;
+	const storage = getStorage();
+	const storageRef = ref(storage, "picture");
+	console.log(Environment['FIREBASE_API_KEY']);
 
+	await uploadBytes(storageRef, blob).then((snapshot) => {
+		console.log('Uploaded an blob !');
+	});
+
+	let downloadURL
+	await getDownloadURL(storageRef).then((url) => {
+		console.log('get downloadURL !	' + url);
+		downloadURL = url;
+		
+	})
+	
 	blob.close();
-
-	return await snapshot.ref.getDownloadURL();
+	return downloadURL;
 }
 
 const styles = StyleSheet.create({
 	container: {
 		flex: 1,
 		backgroundColor: '#fff',
+		paddingTop: 50,
 		paddingBottom: 10
 	},
 	developmentModeText: {
@@ -305,6 +350,13 @@ const styles = StyleSheet.create({
 	getStartedText: {
 		fontSize: 17,
 		color: 'rgba(96,100,109, 1)',
+		lineHeight: 24,
+		textAlign: 'center'
+	},
+
+	getGeneralText: {
+		fontSize: 15,
+		color: 'rgba(0,0,0, 1)',
 		lineHeight: 24,
 		textAlign: 'center'
 	},
